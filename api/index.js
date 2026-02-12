@@ -17,7 +17,14 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: [
+    "http://localhost:5173",
+    // "https://your-frontend-domain.vercel.app"
+  ],
+  credentials: true
+}));
+
 app.use(express.json());
 
 // Database
@@ -37,4 +44,4 @@ const __dirname = path.dirname(__filename);
 app.use('/uploads', express.static(path.join(__dirname, '/uploads')));
 
 // Start Server
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+export default app;
