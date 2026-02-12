@@ -36,4 +36,16 @@ router.post('/', protect, admin, upload.single('image'), (req, res) => {
   });
 });
 
+router.post('/bulk', protect, admin, upload.array('images', 10), (req, res) => {
+  if (!req.files || req.files.length === 0) {
+    return res.status(400).json({ message: 'No files uploaded' });
+  }
+  
+  const imageUrls = req.files.map(file => file.path);
+  
+  res.json({ 
+    message: 'Images uploaded successfully', 
+    imageUrls 
+  });
+});
 export default router;
