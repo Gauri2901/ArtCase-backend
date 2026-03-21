@@ -6,10 +6,10 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 // Import Routes
-import productRoutes from './routes/productRoutes.js';
-import authRoutes from './routes/authRoutes.js';
-import uploadRoutes from './routes/uploadRoutes.js';
-import paymentRoutes from './routes/paymentRoutes.js';
+import productRoutes from '../routes/productRoutes.js';
+import authRoutes from '../routes/authRoutes.js';
+import uploadRoutes from '../routes/uploadRoutes.js';
+import paymentRoutes from '../routes/paymentRoutes.js';
 
 dotenv.config();
 
