@@ -2,6 +2,8 @@
 import Razorpay from 'razorpay';
 import crypto from 'crypto';
 import dotenv from 'dotenv';
+import Order from '../models/Order.js';
+import User from '../models/User.js';
 
 dotenv.config();
 
@@ -32,7 +34,16 @@ export const createOrder = async (req, res) => {
 
 export const verifyPayment = async (req, res) => {
     try {
-        const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+        const {
+            razorpay_order_id,
+            razorpay_payment_id,
+            razorpay_signature,
+            customer,
+            artworks,
+            amount,
+            currency,
+            method,
+        } = req.body;
 
         const sign = razorpay_order_id + "|" + razorpay_payment_id;
         const expectedSign = crypto
@@ -41,7 +52,52 @@ export const verifyPayment = async (req, res) => {
             .digest("hex");
 
         if (razorpay_signature === expectedSign) {
-            return res.status(200).json({ message: "Payment verified successfully" });
+            if (!req.user) {
+                return res.status(401).json({ message: 'Not authorized' });
+            }
+
+            if (!customer || !Array.isArray(artworks) || artworks.length === 0) {
+                return res.status(400).json({ message: 'Customer and artwork details are required' });
+            }
+
+            const order = await Order.create({
+                orderId: `ART-${Date.now().toString(36).toUpperCase()}`,
+                user: {
+                    account: req.user._id,
+                    name: customer.name,
+                    email: customer.email,
+                    address: customer.address,
+                    city: customer.city,
+                    zip: customer.zip,
+                },
+                payment: {
+                    amount,
+                    currency: currency || 'INR',
+                    method: method || 'Razorpay',
+                    status: 'paid',
+                    razorpayOrderId: razorpay_order_id,
+                    razorpayPaymentId: razorpay_payment_id,
+                },
+                artworks: artworks.map((artwork) => ({
+                    artwork: artwork.artworkId,
+                    title: artwork.title,
+                    imageUrl: artwork.imageUrl,
+                    price: artwork.price,
+                    quantity: artwork.quantity,
+                    category: artwork.category,
+                })),
+                unread: true,
+                placedAt: new Date(),
+            });
+
+            await User.findByIdAndUpdate(req.user._id, {
+                $push: { orders: order._id },
+            });
+
+            return res.status(200).json({
+                message: "Payment verified successfully",
+                order,
+            });
         } else {
             return res.status(400).json({ message: "Invalid signature sent!" });
         }

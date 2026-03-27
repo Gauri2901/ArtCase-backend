@@ -2,7 +2,8 @@ import mongoose from "mongoose";
 export const productSchema = new mongoose.Schema({
   title: { 
     type: String,
-    required: true 
+    required: true,
+    trim: true
   },
   imageUrl: { 
     type: String, 
@@ -14,13 +15,18 @@ export const productSchema = new mongoose.Schema({
   },
   description: { 
     type: String, 
-    required: true 
+    required: true,
+    trim: true
   },
   category: { 
     type: String, 
     required: true,
     enum: ['Oil', 'Acrylic', 'Watercolor', 'Mixed Media'] 
   },
+  tags: [{
+    type: String,
+    trim: true
+  }],
   dimensions: { 
     type: String, 
     default: '24" x 36"' 

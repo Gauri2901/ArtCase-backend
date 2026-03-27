@@ -10,6 +10,9 @@ import productRoutes from '../routes/productRoutes.js';
 import authRoutes from '../routes/authRoutes.js';
 import uploadRoutes from '../routes/uploadRoutes.js';
 import paymentRoutes from '../routes/paymentRoutes.js';
+import orderRoutes from '../routes/orderRoutes.js';
+import logRoutes from '../routes/logRoutes.js';
+import adminRoutes from '../routes/adminRoutes.js';
 
 dotenv.config();
 
@@ -34,9 +37,13 @@ mongoose.connect(process.env.MONGO_URI)
 
 // Mounting Routes
 app.use('/api/products', productRoutes);
+app.use('/api/artworks', productRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/payment', paymentRoutes);
+app.use('/api/orders', orderRoutes);
+app.use('/api/logs', logRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Static Folder for Images
 const __filename = fileURLToPath(import.meta.url);
