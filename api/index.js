@@ -13,6 +13,7 @@ import paymentRoutes from '../routes/paymentRoutes.js';
 import orderRoutes from '../routes/orderRoutes.js';
 import logRoutes from '../routes/logRoutes.js';
 import adminRoutes from '../routes/adminRoutes.js';
+import commissionRoutes from '../routes/commissionRoutes.js';
 
 dotenv.config();
 
@@ -44,6 +45,7 @@ app.use('/api/payment', paymentRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/logs', logRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/commissions', commissionRoutes);
 
 // Static Folder for Images
 const __filename = fileURLToPath(import.meta.url);

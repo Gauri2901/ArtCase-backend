@@ -48,7 +48,7 @@ const orderSchema = new mongoose.Schema(
       account: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
-        required: true,
+        default: null,
       },
       name: {
         type: String,
@@ -62,19 +62,25 @@ const orderSchema = new mongoose.Schema(
       },
       address: {
         type: String,
-        required: true,
         trim: true,
+        default: '',
       },
       city: {
         type: String,
-        required: true,
         trim: true,
+        default: '',
       },
       zip: {
         type: String,
-        required: true,
         trim: true,
+        default: '',
       },
+    },
+    orderKind: {
+      type: String,
+      required: true,
+      enum: ['purchase', 'commission'],
+      default: 'purchase',
     },
     payment: {
       amount: {
@@ -100,18 +106,55 @@ const orderSchema = new mongoose.Schema(
       },
       razorpayOrderId: {
         type: String,
-        required: true,
+        default: '',
       },
       razorpayPaymentId: {
         type: String,
-        required: true,
+        default: '',
       },
     },
     artworks: {
       type: [orderArtworkSchema],
       validate: {
-        validator: (value) => Array.isArray(value) && value.length > 0,
-        message: 'At least one artwork is required for an order',
+        validator: function validator(value) {
+          if (this.orderKind === 'commission') {
+            return Array.isArray(value);
+          }
+
+          return Array.isArray(value) && value.length > 0;
+        },
+        message: 'At least one artwork is required for a purchase order',
+      },
+    },
+    commissionDetails: {
+      commission: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Commission',
+        default: null,
+      },
+      artworkType: {
+        type: String,
+        trim: true,
+        default: '',
+      },
+      description: {
+        type: String,
+        trim: true,
+        default: '',
+      },
+      sizeDetails: {
+        type: String,
+        trim: true,
+        default: '',
+      },
+      referenceImages: {
+        type: [String],
+        default: [],
+      },
+      adminNotes: {
+        type: String,
+        trim: true,
+        default: '',
       },
     },
     unread: {

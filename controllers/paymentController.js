@@ -70,6 +70,7 @@ export const verifyPayment = async (req, res) => {
                     city: customer.city,
                     zip: customer.zip,
                 },
+                orderKind: 'purchase',
                 payment: {
                     amount,
                     currency: currency || 'INR',
@@ -86,6 +87,14 @@ export const verifyPayment = async (req, res) => {
                     quantity: artwork.quantity,
                     category: artwork.category,
                 })),
+                commissionDetails: {
+                    commission: null,
+                    artworkType: '',
+                    description: '',
+                    sizeDetails: '',
+                    referenceImages: [],
+                    adminNotes: '',
+                },
                 unread: true,
                 placedAt: new Date(),
             });
