@@ -21,51 +21,42 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-const configuredOrigins = [
-  process.env.FRONTEND_URL,
-  process.env.FRONTEND_PREVIEW_URL,
-  'http://localhost:5173',
-].filter(Boolean);
-
-const isAllowedOrigin = (origin) => {
-  if (!origin) {
-    return true;
-  }
-
-  if (configuredOrigins.includes(origin)) {
-    return true;
-  }
-
-  // Allow any Vercel preview or production deployment
-  return /^https:\/\/art-case-frontend[-.\w]*\.vercel\.app$/i.test(origin);
-};
-
-// Middleware
-app.use(cors({
-  origin(origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
+// CORS Configuration
+const corsOptions = {
+  origin: function(origin, callback) {
+    // Allow requests with no origin
     if (!origin) {
       return callback(null, true);
     }
 
-    // Check if origin is in configured list
-    if (configuredOrigins.includes(origin)) {
+    // Allow frontend URL
+    if (origin === 'https://art-case-frontend-1gjb.vercel.app') {
       return callback(null, true);
     }
 
-    // Allow any Vercel deployment (art-case-frontend)
-    if (/^https:\/\/art-case-frontend[-\w.]*\.vercel\.app$/.test(origin)) {
+    // Allow localhost for development
+    if (origin === 'http://localhost:5173' || origin === 'http://localhost:3000') {
       return callback(null, true);
     }
 
-    console.warn(`CORS rejected origin: ${origin}`);
-    callback(new Error('Not allowed by CORS'));
+    // Allow all Vercel deployments matching pattern
+    if (/^https:\/\/art-case-frontend.*\.vercel\.app$/.test(origin)) {
+      return callback(null, true);
+    }
+
+    console.log(`CORS blocked: ${origin}`);
+    callback(new Error('CORS not allowed'));
   },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  optionsSuccessStatus: 200
-}));
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS', 'HEAD'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  exposedHeaders: ['Content-Type'],
+  optionsSuccessStatus: 200,
+  maxAge: 86400
+};
+
+// Middleware
+app.use(cors(corsOptions));
 app.use(express.json());
 
 // Database
