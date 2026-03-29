@@ -24,22 +24,18 @@ const PORT = process.env.PORT || 5000;
 // CORS Configuration
 const corsOptions = {
   origin: function(origin, callback) {
-    // Allow requests with no origin
     if (!origin) {
       return callback(null, true);
     }
 
-    // Allow frontend URL
     if (origin === 'https://art-case-frontend-1gjb.vercel.app') {
       return callback(null, true);
     }
 
-    // Allow localhost for development
     if (origin === 'http://localhost:5173' || origin === 'http://localhost:3000') {
       return callback(null, true);
     }
 
-    // Allow all Vercel deployments matching pattern
     if (/^https:\/\/art-case-frontend.*\.vercel\.app$/.test(origin)) {
       return callback(null, true);
     }
@@ -54,6 +50,9 @@ const corsOptions = {
   optionsSuccessStatus: 200,
   maxAge: 86400
 };
+
+// ✅ CHANGE: Added this line to handle preflight OPTIONS requests
+app.options('/{*path}', cors(corsOptions));
 
 // Middleware
 app.use(cors(corsOptions));
