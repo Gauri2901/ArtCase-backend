@@ -21,12 +21,33 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+const configuredOrigins = [
+  process.env.FRONTEND_URL,
+  process.env.FRONTEND_PREVIEW_URL,
+  'http://localhost:5173',
+].filter(Boolean);
+
+const isAllowedOrigin = (origin) => {
+  if (!origin) {
+    return true;
+  }
+
+  if (configuredOrigins.includes(origin)) {
+    return true;
+  }
+
+  return /^https:\/\/art-case-frontend-[a-z0-9-]+\.vercel\.app$/i.test(origin);
+};
+
 // Middleware
 app.use(cors({
-  origin: [
-    "http://localhost:5173",
-    // "https://your-frontend-domain.vercel.app"
-  ],
+  origin(origin, callback) {
+    if (isAllowedOrigin(origin)) {
+      return callback(null, true);
+    }
+
+    return callback(new Error(`CORS blocked for origin: ${origin}`));
+  },
   credentials: true
 }));
 
