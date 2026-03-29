@@ -43,16 +43,28 @@ const isAllowedOrigin = (origin) => {
 // Middleware
 app.use(cors({
   origin(origin, callback) {
-    if (isAllowedOrigin(origin)) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) {
       return callback(null, true);
     }
 
-    console.error(`CORS blocked for origin: ${origin}`);
-    return callback(new Error(`CORS blocked for origin: ${origin}`));
+    // Check if origin is in configured list
+    if (configuredOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    // Allow any Vercel deployment (art-case-frontend)
+    if (/^https:\/\/art-case-frontend[-\w.]*\.vercel\.app$/.test(origin)) {
+      return callback(null, true);
+    }
+
+    console.warn(`CORS rejected origin: ${origin}`);
+    callback(new Error('Not allowed by CORS'));
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
+  optionsSuccessStatus: 200
 }));
 app.use(express.json());
 
