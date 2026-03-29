@@ -1,11 +1,45 @@
 import mongoose from 'mongoose';
 
+const paymentSchema = new mongoose.Schema(
+  {
+    status: {
+      type: String,
+      enum: ['unpaid', 'paid', 'failed'],
+      default: 'unpaid',
+    },
+    paymentLink: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+    paymentOrderId: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+    paymentId: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+    linkSentAt: {
+      type: Date,
+      default: null,
+    },
+    paidAt: {
+      type: Date,
+      default: null,
+    },
+  },
+  { _id: false }
+);
+
 const commissionHistorySchema = new mongoose.Schema(
   {
     status: {
       type: String,
       required: true,
-      enum: ['pending', 'approved', 'rejected', 'in_progress', 'completed'],
+      enum: ['pending', 'approved', 'payment_pending', 'paid', 'rejected', 'in_progress', 'completed'],
     },
     changedAt: {
       type: Date,
@@ -81,7 +115,7 @@ const commissionSchema = new mongoose.Schema(
     status: {
       type: String,
       required: true,
-      enum: ['pending', 'approved', 'rejected', 'in_progress', 'completed'],
+      enum: ['pending', 'approved', 'payment_pending', 'paid', 'rejected', 'in_progress', 'completed'],
       default: 'pending',
     },
     adminNotes: {
@@ -98,6 +132,17 @@ const commissionSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    payment: {
+      type: paymentSchema,
+      default: () => ({
+        status: 'unpaid',
+        paymentLink: '',
+        paymentOrderId: '',
+        paymentId: '',
+        linkSentAt: null,
+        paidAt: null,
+      }),
+    },
     convertedOrder: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Order',
@@ -110,6 +155,14 @@ const commissionSchema = new mongoose.Schema(
     submittedAt: {
       type: Date,
       default: Date.now,
+    },
+    approvedAt: {
+      type: Date,
+      default: null,
+    },
+    completedAt: {
+      type: Date,
+      default: null,
     },
   },
   { timestamps: true }

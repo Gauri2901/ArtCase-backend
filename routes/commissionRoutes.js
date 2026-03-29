@@ -4,7 +4,14 @@ import { v2 as cloudinary } from 'cloudinary';
 import { CloudinaryStorage } from 'multer-storage-cloudinary';
 import dotenv from 'dotenv';
 import { admin, protect } from '../middleware/authMiddleware.js';
-import { createCommission, getCommissions, updateCommission } from '../controllers/commissionController.js';
+import {
+  createCommission,
+  createCommissionPaymentOrder,
+  getCommissions,
+  getMyCommissions,
+  updateCommission,
+  verifyCommissionPayment,
+} from '../controllers/commissionController.js';
 
 dotenv.config();
 
@@ -25,7 +32,7 @@ const storage = new CloudinaryStorage({
 const upload = multer({ storage });
 const router = express.Router();
 
-router.post('/', createCommission);
+router.post('/', protect, createCommission);
 router.post('/upload-references', upload.array('references', 6), (req, res) => {
   const referenceImages = Array.isArray(req.files) ? req.files.map((file) => file.path) : [];
 
@@ -34,6 +41,9 @@ router.post('/upload-references', upload.array('references', 6), (req, res) => {
     referenceImages,
   });
 });
+router.get('/mine', protect, getMyCommissions);
+router.post('/:id/create-payment-order', protect, createCommissionPaymentOrder);
+router.post('/:id/verify-payment', protect, verifyCommissionPayment);
 router.get('/', protect, admin, getCommissions);
 router.patch('/:id', protect, admin, updateCommission);
 

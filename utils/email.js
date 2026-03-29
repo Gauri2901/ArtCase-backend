@@ -37,6 +37,7 @@ export const sendCommissionApprovedEmail = async ({
   quotedPrice,
   currency = 'INR',
   adminNotes = '',
+  paymentLink = '',
 }) => {
   const smtpFrom = process.env.SMTP_FROM || process.env.SMTP_USER;
   const transporter = await createTransporter();
@@ -64,6 +65,7 @@ export const sendCommissionApprovedEmail = async ({
       `Quoted price: ${formattedPrice}`,
       `Size details: ${sizeDetails}`,
       `Concept: ${description}`,
+      paymentLink ? `Complete payment here: ${paymentLink}` : '',
       adminNotes ? `Admin notes: ${adminNotes}` : '',
       '',
       'Our team will contact you with the next steps shortly.',
@@ -83,6 +85,7 @@ export const sendCommissionApprovedEmail = async ({
           <p><strong>Quoted price:</strong> ${formattedPrice}</p>
           <p><strong>Size details:</strong> ${sizeDetails}</p>
           <p><strong>Concept:</strong> ${description}</p>
+          ${paymentLink ? `<p><strong>Payment link:</strong> <a href="${paymentLink}">${paymentLink}</a></p>` : ''}
           ${adminNotes ? `<p><strong>Admin notes:</strong> ${adminNotes}</p>` : ''}
         </div>
         <p style="margin-top: 16px;">We will reach out soon with the next steps.</p>
@@ -92,7 +95,7 @@ export const sendCommissionApprovedEmail = async ({
   });
 };
 
-export const sendCommissionOrderPlacedEmail = async ({
+export const sendCommissionPaymentReceivedEmail = async ({
   to,
   customerName,
   orderId,
@@ -119,11 +122,11 @@ export const sendCommissionOrderPlacedEmail = async ({
   await transporter.sendMail({
     from: smtpFrom,
     to,
-    subject: `Your Art-Case order ${orderId} has been created`,
+    subject: `Payment received for your Art-Case order ${orderId}`,
     text: [
       `Hi ${customerName},`,
       '',
-      'Your commission has now been placed as an order with Art-Case.',
+      'We have received your commission payment successfully.',
       `Order ID: ${orderId}`,
       `Artwork type: ${artworkType}`,
       `Price: ${formattedPrice}`,
@@ -139,9 +142,9 @@ export const sendCommissionOrderPlacedEmail = async ({
       .join('\n'),
     html: `
       <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #111827;">
-        <h2 style="margin-bottom: 12px;">Your commission order has been placed</h2>
+        <h2 style="margin-bottom: 12px;">Your payment has been received</h2>
         <p>Hi ${customerName},</p>
-        <p>Your custom artwork request has now been placed as an official order with Art-Case.</p>
+        <p>Your custom artwork payment has been received successfully. The commission can now move into production.</p>
         <div style="padding: 16px; border: 1px solid #e5e7eb; border-radius: 12px; background: #f9fafb;">
           <p><strong>Order ID:</strong> ${orderId}</p>
           <p><strong>Artwork type:</strong> ${artworkType}</p>
@@ -150,7 +153,7 @@ export const sendCommissionOrderPlacedEmail = async ({
           <p><strong>Concept:</strong> ${description}</p>
           ${adminNotes ? `<p><strong>Admin notes:</strong> ${adminNotes}</p>` : ''}
         </div>
-        <p style="margin-top: 16px;">We will share further progress updates with you by email.</p>
+        <p style="margin-top: 16px;">We will keep you updated as the artwork moves forward.</p>
         <p>Art-Case</p>
       </div>
     `,

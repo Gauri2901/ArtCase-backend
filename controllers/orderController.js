@@ -39,6 +39,15 @@ export const getOrders = async (req, res) => {
   }
 };
 
+export const getMyOrders = async (req, res) => {
+  try {
+    const orders = await Order.find({ 'user.account': req.user._id }).sort({ placedAt: -1 });
+    res.json(orders);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 export const getUnreadOrders = async (_req, res) => {
   try {
     const unreadOrders = await Order.find({ unread: true })
