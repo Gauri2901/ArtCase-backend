@@ -36,7 +36,8 @@ const isAllowedOrigin = (origin) => {
     return true;
   }
 
-  return /^https:\/\/art-case-frontend-[a-z0-9-]+\.vercel\.app$/i.test(origin);
+  // Allow any Vercel preview or production deployment
+  return /^https:\/\/art-case-frontend[-.\w]*\.vercel\.app$/i.test(origin);
 };
 
 // Middleware
@@ -46,9 +47,12 @@ app.use(cors({
       return callback(null, true);
     }
 
+    console.error(`CORS blocked for origin: ${origin}`);
     return callback(new Error(`CORS blocked for origin: ${origin}`));
   },
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 app.use(express.json());
 
