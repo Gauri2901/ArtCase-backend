@@ -159,3 +159,55 @@ export const sendCommissionPaymentReceivedEmail = async ({
     `,
   });
 };
+
+export const sendPasswordResetOTPEmail = async ({
+  to,
+  userName,
+  otp,
+}) => {
+  const smtpFrom = process.env.SMTP_FROM || process.env.SMTP_USER;
+  const transporter = await createTransporter();
+
+  if (!transporter || !smtpFrom) {
+    console.warn('Password reset OTP email skipped: SMTP environment variables are not configured.');
+    return;
+  }
+
+  try {
+    await transporter.sendMail({
+      from: smtpFrom,
+      to,
+      subject: 'Your Password Reset OTP - Art-Case',
+      text: [
+        `Hi ${userName},`,
+        '',
+        'You requested to reset your password. Use the OTP below to proceed:',
+        ``,
+        `OTP: ${otp}`,
+        ``,
+        'This OTP will expire in 10 minutes.',
+        'If you did not request this, please ignore this email.',
+        '',
+        'Art-Case',
+      ]
+        .filter(Boolean)
+        .join('\n'),
+      html: `
+      <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #111827;">
+        <h2 style="margin-bottom: 12px;">Password Reset Request</h2>
+        <p>Hi ${userName},</p>
+        <p>You requested to reset your password. Use the OTP below to proceed:</p>
+        <div style="padding: 20px; border: 1px solid #e5e7eb; border-radius: 12px; background: #f9fafb; text-align: center; margin: 20px 0;">
+          <p style="font-size: 32px; font-weight: bold; color: #1f2937; margin: 0; letter-spacing: 4px;">${otp}</p>
+        </div>
+        <p style="color: #6b7280; font-size: 14px;">This OTP will expire in 10 minutes.</p>
+        <p style="color: #6b7280;">If you did not request this, please ignore this email.</p>
+        <p style="margin-top: 16px;">Art-Case</p>
+      </div>
+    `,
+    });
+  } catch (error) {
+    console.error('Error sending password reset OTP email:', error);
+    throw error;
+  }
+};

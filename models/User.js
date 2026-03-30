@@ -41,7 +41,23 @@ const userSchema = new mongoose.Schema({
     orders: [{ 
         type: mongoose.Schema.Types.ObjectId, 
         ref: 'Order' 
-    }] // Placeholder for later
+    }], // Placeholder for later
+    resetPasswordOTP: {
+        type: String,
+        default: null
+    },
+    resetPasswordOTPExpiry: {
+        type: Date,
+        default: null
+    },
+    resetPasswordToken: {
+        type: String,
+        default: null
+    },
+    resetPasswordTokenExpiry: {
+        type: Date,
+        default: null
+    }
 }, { timestamps: true });
 
 export default mongoose.model('User', userSchema);
