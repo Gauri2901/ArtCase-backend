@@ -40,6 +40,7 @@ const buildArtworkPayload = (body) => {
     imageUrl,
     category,
     price,
+    dimensions: String(body.dimensions ?? '24" x 36"').trim(),
     tags,
   };
 };
@@ -53,6 +54,7 @@ const buildArtworkChanges = (previousProduct, nextPayload) => {
     ['imageUrl', 'Image'],
     ['category', 'Category'],
     ['price', 'Price'],
+    ['dimensions', 'Dimensions'],
     ['tags', 'Tags'],
   ];
 
