@@ -4,6 +4,7 @@ import Razorpay from 'razorpay';
 import Commission from '../models/Commission.js';
 import Order from '../models/Order.js';
 import { sendCommissionApprovedEmail, sendCommissionPaymentReceivedEmail } from '../utils/email.js';
+import { ensureInvoiceForOrder } from '../utils/invoiceService.js';
 import { createUserNotification } from '../utils/notifications.js';
 
 dotenv.config();
@@ -472,6 +473,7 @@ export const verifyCommissionPayment = async (req, res) => {
     appendHistory(commission, 'in_progress', req.user._id, 'Commission automatically moved to in progress after payment.');
 
     let orderId = '';
+    let invoiceAttachment = null;
 
     if (commission.convertedOrder) {
       const order = await Order.findById(commission.convertedOrder._id);
@@ -483,8 +485,22 @@ export const verifyCommissionPayment = async (req, res) => {
         order.payment.razorpayOrderId = razorpay_order_id;
         order.payment.razorpayPaymentId = razorpay_payment_id;
         order.unread = true;
+        order.pricing.subtotal = commission.quotedPrice ?? commission.budget;
+        order.pricing.discount = 0;
+        order.pricing.shipping = 0;
+        order.pricing.total = commission.quotedPrice ?? commission.budget;
+        order.pricing.currency = commission.currency || 'INR';
+        await order.save();
+        const invoiceResult = await ensureInvoiceForOrder(order);
+        order.invoice.invoiceNumber = invoiceResult.invoice.invoiceNumber;
+        order.invoice.issuedAt = invoiceResult.invoice.pdf.generatedAt;
+        order.invoice.pdfUrl = invoiceResult.invoice.pdf.url;
         await order.save();
         orderId = order.orderId;
+        invoiceAttachment = {
+          fileName: invoiceResult.fileName,
+          buffer: invoiceResult.pdfBuffer,
+        };
       }
     }
 
@@ -508,6 +524,7 @@ export const verifyCommissionPayment = async (req, res) => {
       amount: commission.quotedPrice ?? commission.budget,
       currency: commission.currency || 'INR',
       adminNotes: commission.adminNotes,
+      invoiceAttachment,
     });
 
     res.json({

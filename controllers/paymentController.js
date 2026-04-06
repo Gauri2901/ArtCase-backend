@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 import Order from '../models/Order.js';
 import User from '../models/User.js';
 import { sendOrderPlacedEmail } from '../utils/email.js';
+import { ensureInvoiceForOrder } from '../utils/invoiceService.js';
 
 dotenv.config();
 
@@ -122,6 +123,12 @@ export const verifyPayment = async (req, res) => {
                 $push: { orders: order._id },
             });
 
+            const invoiceResult = await ensureInvoiceForOrder(order);
+            order.invoice.invoiceNumber = invoiceResult.invoice.invoiceNumber;
+            order.invoice.issuedAt = invoiceResult.invoice.pdf.generatedAt;
+            order.invoice.pdfUrl = invoiceResult.invoice.pdf.url;
+            await order.save();
+
             try {
                 await sendOrderPlacedEmail({
                     to: customer.email,
@@ -139,6 +146,10 @@ export const verifyPayment = async (req, res) => {
                     zip: order.user.zip,
                     items: order.artworks,
                     pricing: order.pricing,
+                    invoiceAttachment: {
+                        fileName: invoiceResult.fileName,
+                        buffer: invoiceResult.pdfBuffer,
+                    },
                 });
             } catch (emailError) {
                 console.error('Failed to send order placed email:', emailError);

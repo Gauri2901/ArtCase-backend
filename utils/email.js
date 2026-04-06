@@ -116,6 +116,7 @@ export const sendCommissionPaymentReceivedEmail = async ({
   amount,
   currency = 'INR',
   adminNotes = '',
+  invoiceAttachment,
 }) => {
   const smtpFrom = process.env.SMTP_FROM || process.env.SMTP_USER;
   const transporter = await createTransporter();
@@ -131,6 +132,15 @@ export const sendCommissionPaymentReceivedEmail = async ({
     from: smtpFrom,
     to,
     subject: `Payment received for your Art-Case order ${orderId}`,
+    attachments: invoiceAttachment
+      ? [
+          {
+            filename: invoiceAttachment.fileName,
+            content: invoiceAttachment.buffer,
+            contentType: 'application/pdf',
+          },
+        ]
+      : [],
     text: [
       `Hi ${customerName},`,
       '',
@@ -236,6 +246,7 @@ export const sendOrderPlacedEmail = async ({
   zip = '',
   items = [],
   pricing,
+  invoiceAttachment,
 }) => {
   const smtpFrom = process.env.SMTP_FROM || process.env.SMTP_USER;
   const transporter = await createTransporter();
@@ -254,6 +265,15 @@ export const sendOrderPlacedEmail = async ({
     from: smtpFrom,
     to,
     subject: `Order placed successfully: ${orderId}`,
+    attachments: invoiceAttachment
+      ? [
+          {
+            filename: invoiceAttachment.fileName,
+            content: invoiceAttachment.buffer,
+            contentType: 'application/pdf',
+          },
+        ]
+      : [],
     text: [
       `Hi ${customerName},`,
       '',

@@ -1,4 +1,6 @@
 import Order from '../models/Order.js';
+import Invoice from '../models/Invoice.js';
+import { ensureInvoiceForOrder } from '../utils/invoiceService.js';
 
 const normalizeOrder = (orderDocument) => {
   const order = orderDocument.toObject ? orderDocument.toObject() : orderDocument;
@@ -30,8 +32,27 @@ const normalizeOrder = (orderDocument) => {
     invoice: {
       invoiceNumber: order.invoice?.invoiceNumber || `INV-${order.orderId}`,
       issuedAt: order.invoice?.issuedAt || order.placedAt,
+      pdfUrl: order.invoice?.pdfUrl || '',
     },
   };
+};
+
+const findAuthorizedOrder = async ({ orderId, user }) => {
+  const order = await Order.findById(orderId);
+
+  if (!order) {
+    return null;
+  }
+
+  if (user?.isAdmin) {
+    return order;
+  }
+
+  if (order.user?.account && String(order.user.account) === String(user?._id)) {
+    return order;
+  }
+
+  return undefined;
 };
 
 const buildOrderFilters = (query) => {
@@ -142,6 +163,46 @@ export const markOrdersAsRead = async (_req, res) => {
     res.status(200).json({ message: 'Notifications marked as read' });
   } catch (error) {
     console.error('markOrdersAsRead error:', error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const getOrderInvoice = async (req, res) => {
+  try {
+    const order = await findAuthorizedOrder({ orderId: req.params.id, user: req.user });
+
+    if (order === null) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    if (order === undefined) {
+      return res.status(403).json({ message: 'Not authorized to access this invoice' });
+    }
+
+    const existingInvoice = await Invoice.findOne({ order: order._id });
+    const invoiceResult = existingInvoice?.pdf?.url
+      ? { invoice: existingInvoice, pdfBuffer: null, fileName: existingInvoice.pdf.fileName }
+      : await ensureInvoiceForOrder(order);
+
+    if (!order.invoice) {
+      order.invoice = {};
+    }
+
+    order.invoice.invoiceNumber = invoiceResult.invoice.invoiceNumber;
+    order.invoice.issuedAt = invoiceResult.invoice.pdf.generatedAt;
+    order.invoice.pdfUrl = invoiceResult.invoice.pdf.url;
+    await order.save();
+
+    res.status(200).json({
+      invoiceId: invoiceResult.invoice._id,
+      invoiceNumber: invoiceResult.invoice.invoiceNumber,
+      fileName: invoiceResult.invoice.pdf.fileName,
+      issuedAt: invoiceResult.invoice.pdf.generatedAt,
+      downloadUrl: invoiceResult.invoice.pdf.url,
+      bytes: invoiceResult.invoice.pdf.bytes,
+    });
+  } catch (error) {
+    console.error('getOrderInvoice error:', error);
     res.status(500).json({ message: error.message });
   }
 };

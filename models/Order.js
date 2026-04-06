@@ -159,6 +159,10 @@ const orderSchema = new mongoose.Schema(
         type: Date,
         default: Date.now,
       },
+      pdfUrl: {
+        type: String,
+        default: '',
+      },
     },
     artworks: {
       type: [orderArtworkSchema],
