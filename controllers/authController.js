@@ -11,32 +11,41 @@ const generateToken = (id) => {
 // @route   POST /api/auth/register
 // @access  Public
 export const registerUser = async (req, res) => {
-    const { name, email, password, phone = '' } = req.body;
+    try {
+        const { name, email, password, phone = '' } = req.body;
 
-    const userExists = await User.findOne({ email });
-    if (userExists) return res.status(400).json({ message: 'User already exists' });
+        if (!email || !password || !name) {
+            return res.status(400).json({ message: 'Please provide all required fields' });
+        }
 
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
+        const userExists = await User.findOne({ email });
+        if (userExists) return res.status(400).json({ message: 'User already exists' });
 
-    const user = await User.create({
-        name,
-        email,
-        phone,
-        password: hashedPassword,
-    });
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
 
-    if (user) {
-        res.status(201).json({
-            _id: user.id,
-            name: user.name,
-            email: user.email,
-            phone: user.phone,
-            isAdmin: user.isAdmin,
-            token: generateToken(user.id),
+        const user = await User.create({
+            name,
+            email,
+            phone,
+            password: hashedPassword,
         });
-    } else {
-        res.status(400).json({ message: 'Invalid user data' });
+
+        if (user) {
+            res.status(201).json({
+                _id: user.id,
+                name: user.name,
+                email: user.email,
+                phone: user.phone,
+                isAdmin: user.isAdmin,
+                token: generateToken(user.id),
+            });
+        } else {
+            res.status(400).json({ message: 'Invalid user data' });
+        }
+    } catch (error) {
+        console.error('Register error:', error.message);
+        res.status(500).json({ message: 'Server error. Please try again later.' });
     }
 };
 
@@ -44,68 +53,88 @@ export const registerUser = async (req, res) => {
 // @route   POST /api/auth/login
 // @access  Public
 export const authUser = async (req, res) => {
-    const { email, password } = req.body;
-    const user = await User.findOne({ email });
+    try {
+        const { email, password } = req.body;
 
-    if (user && (await bcrypt.compare(password, user.password))) {
-        res.json({
-            _id: user.id,
-            name: user.name,
-            email: user.email,
-            phone: user.phone,
-            isAdmin: user.isAdmin,
-            token: generateToken(user.id),
-        });
-    } else {
-        res.status(401).json({ message: 'Invalid email or password' });
+        if (!email || !password) {
+            return res.status(400).json({ message: 'Please provide email and password' });
+        }
+
+        const user = await User.findOne({ email });
+
+        if (user && (await bcrypt.compare(password, user.password))) {
+            res.json({
+                _id: user.id,
+                name: user.name,
+                email: user.email,
+                phone: user.phone,
+                isAdmin: user.isAdmin,
+                token: generateToken(user.id),
+            });
+        } else {
+            res.status(401).json({ message: 'Invalid email or password' });
+        }
+    } catch (error) {
+        console.error('Login error:', error.message);
+        res.status(500).json({ message: 'Server error. Please try again later.' });
     }
 };
 
 export const getProfile = async (req, res) => {
-    const user = await User.findById(req.user._id).select('-password');
+    try {
+        const user = await User.findById(req.user._id).select('-password');
 
-    if (!user) {
-        return res.status(404).json({ message: 'User not found' });
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        res.json({
+            _id: user.id,
+            name: user.name,
+            email: user.email,
+            phone: user.phone || '',
+            isAdmin: user.isAdmin,
+            token: generateToken(user.id),
+        });
+    } catch (error) {
+        console.error('Get profile error:', error.message);
+        res.status(500).json({ message: 'Failed to fetch profile. Please try again.' });
     }
-
-    res.json({
-        _id: user.id,
-        name: user.name,
-        email: user.email,
-        phone: user.phone || '',
-        isAdmin: user.isAdmin,
-        token: generateToken(user.id),
-    });
 };
 
 export const updateProfile = async (req, res) => {
-    const user = await User.findById(req.user._id);
+    try {
+        const user = await User.findById(req.user._id);
 
-    if (!user) {
-        return res.status(404).json({ message: 'User not found' });
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        const nextEmail = String(req.body.email ?? user.email).trim();
+        const existingEmailOwner = await User.findOne({ email: nextEmail, _id: { $ne: user._id } });
+
+        if (existingEmailOwner) {
+            return res.status(400).json({ message: 'Email is already in use.' });
+        }
+
+        user.name = String(req.body.name ?? user.name).trim();
+        user.email = nextEmail;
+        user.phone = String(req.body.phone ?? user.phone ?? '').trim();
+
+        const updatedUser = await user.save();
+
+        res.json({
+            _id: updatedUser.id,
+            name: updatedUser.name,
+            email: updatedUser.email,
+            phone: updatedUser.phone || '',
+            isAdmin: updatedUser.isAdmin,
+            token: generateToken(updatedUser.id),
+        });
+    } catch (error) {
+        console.error('Update profile error:', error.message);
+        res.status(500).json({ message: 'Failed to update profile. Please try again.' });
     }
-
-    const nextEmail = String(req.body.email ?? user.email).trim();
-    const existingEmailOwner = await User.findOne({ email: nextEmail, _id: { $ne: user._id } });
-
-    if (existingEmailOwner) {
-        return res.status(400).json({ message: 'Email is already in use.' });
-    }
-
-    user.name = String(req.body.name ?? user.name).trim();
-    user.email = nextEmail;
-    user.phone = String(req.body.phone ?? user.phone ?? '').trim();
-
-    const updatedUser = await user.save();
-
-    res.json({
-        _id: updatedUser.id,
-        name: updatedUser.name,
-        email: updatedUser.email,
-        phone: updatedUser.phone || '',
-        isAdmin: updatedUser.isAdmin,
-        token: generateToken(updatedUser.id),
-    });
 };
 
 // @desc    Forgot Password - Send OTP to email

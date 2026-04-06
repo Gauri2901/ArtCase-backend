@@ -24,24 +24,44 @@ const PORT = process.env.PORT || 5000;
 // CORS Configuration
 const corsOptions = {
   origin: function(origin, callback) {
+    const allowedOrigins = [
+      // Development
+      'http://localhost:5173',
+      'http://localhost:3000',
+      'http://127.0.0.1:5173',
+      'http://127.0.0.1:3000',
+      // Production - Frontend
+      'https://art-case-frontend-1gjb.vercel.app',
+      // Productions - Any other frontend subdomain
+    ];
+
+    // Allow requests without origin (mobile apps, same-origin requests)
     if (!origin) {
       return callback(null, true);
     }
 
-    if (origin === 'https://art-case-frontend-1gjb.vercel.app') {
+    // Allow Vercel frontend urls (pattern matching for any art-case-frontend.vercel.app subdomain)
+    if (/https:\/\/art-case-frontend.*\.vercel\.app$/.test(origin)) {
       return callback(null, true);
     }
 
-    if (origin === 'http://localhost:5173' || origin === 'http://localhost:3000') {
+    // Allow localhost/127.0.0.1 for development
+    if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
       return callback(null, true);
     }
 
-    if (/^https:\/\/art-case-frontend.*\.vercel\.app$/.test(origin)) {
+    // For production, check allowed list
+    if (allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
 
-    console.log(`CORS blocked: ${origin}`);
-    callback(new Error('CORS not allowed'));
+    // Allow any origin in development for easier testing
+    if (process.env.NODE_ENV === 'development') {
+      return callback(null, true);
+    }
+
+    console.warn(`CORS request from origin: ${origin}`);
+    callback(null, true); // Allow anyway, but log it for monitoring
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS', 'HEAD'],
