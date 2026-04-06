@@ -60,6 +60,11 @@ const orderSchema = new mongoose.Schema(
         required: true,
         trim: true,
       },
+      phone: {
+        type: String,
+        trim: true,
+        default: '',
+      },
       address: {
         type: String,
         trim: true,
@@ -111,6 +116,48 @@ const orderSchema = new mongoose.Schema(
       razorpayPaymentId: {
         type: String,
         default: '',
+      },
+    },
+    pricing: {
+      subtotal: {
+        type: Number,
+        required: true,
+        min: 0,
+        default: 0,
+      },
+      discount: {
+        type: Number,
+        required: true,
+        min: 0,
+        default: 0,
+      },
+      shipping: {
+        type: Number,
+        required: true,
+        min: 0,
+        default: 0,
+      },
+      total: {
+        type: Number,
+        required: true,
+        min: 0,
+        default: 0,
+      },
+      currency: {
+        type: String,
+        required: true,
+        default: 'INR',
+      },
+    },
+    invoice: {
+      invoiceNumber: {
+        type: String,
+        required: true,
+        default: '',
+      },
+      issuedAt: {
+        type: Date,
+        default: Date.now,
       },
     },
     artworks: {

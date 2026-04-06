@@ -27,6 +27,20 @@ const createTransporter = async () => {
   });
 };
 
+const formatCurrency = (amount, currency = 'INR') =>
+  new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency,
+  }).format(amount);
+
+const escapeHtml = (value = '') =>
+  String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+
 export const sendCommissionApprovedEmail = async ({
   to,
   customerName,
@@ -47,10 +61,7 @@ export const sendCommissionApprovedEmail = async ({
     return;
   }
 
-  const formattedPrice = new Intl.NumberFormat('en-IN', {
-    style: 'currency',
-    currency,
-  }).format(quotedPrice);
+  const formattedPrice = formatCurrency(quotedPrice, currency);
 
   await transporter.sendMail({
     from: smtpFrom,
@@ -114,10 +125,7 @@ export const sendCommissionPaymentReceivedEmail = async ({
     return;
   }
 
-  const formattedPrice = new Intl.NumberFormat('en-IN', {
-    style: 'currency',
-    currency,
-  }).format(amount);
+  const formattedPrice = formatCurrency(amount, currency);
 
   await transporter.sendMail({
     from: smtpFrom,
@@ -210,4 +218,123 @@ export const sendPasswordResetOTPEmail = async ({
     console.error('Error sending password reset OTP email:', error);
     throw error;
   }
+};
+
+export const sendOrderPlacedEmail = async ({
+  to,
+  customerName,
+  orderId,
+  orderDate,
+  invoiceNumber,
+  paymentMethod,
+  paymentStatus,
+  razorpayOrderId = '',
+  razorpayPaymentId = '',
+  phone = '',
+  address = '',
+  city = '',
+  zip = '',
+  items = [],
+  pricing,
+}) => {
+  const smtpFrom = process.env.SMTP_FROM || process.env.SMTP_USER;
+  const transporter = await createTransporter();
+
+  if (!transporter || !smtpFrom) {
+    console.warn('Order placed email skipped: SMTP environment variables are not configured.');
+    return;
+  }
+
+  const currency = pricing.currency || 'INR';
+  const lines = items.map((item) =>
+    `- ${item.title} (${item.category}) x${item.quantity} - ${formatCurrency(item.price * item.quantity, currency)}`
+  );
+
+  await transporter.sendMail({
+    from: smtpFrom,
+    to,
+    subject: `Order placed successfully: ${orderId}`,
+    text: [
+      `Hi ${customerName},`,
+      '',
+      'Your Art-Case order has been placed successfully.',
+      `Order ID: ${orderId}`,
+      `Invoice number: ${invoiceNumber}`,
+      `Order date: ${new Date(orderDate).toLocaleString('en-IN')}`,
+      `Payment method: ${paymentMethod}`,
+      `Payment status: ${paymentStatus}`,
+      razorpayOrderId ? `Razorpay order ID: ${razorpayOrderId}` : '',
+      razorpayPaymentId ? `Razorpay payment ID: ${razorpayPaymentId}` : '',
+      phone ? `Phone: ${phone}` : '',
+      `Shipping address: ${[address, city, zip].filter(Boolean).join(', ') || 'Not provided'}`,
+      '',
+      'Items:',
+      ...lines,
+      '',
+      `Subtotal: ${formatCurrency(pricing.subtotal, currency)}`,
+      `Discount: ${formatCurrency(pricing.discount, currency)}`,
+      `Shipping: ${formatCurrency(pricing.shipping, currency)}`,
+      `Total: ${formatCurrency(pricing.total, currency)}`,
+      '',
+      'Thank you for shopping with Art-Case.',
+      '',
+      'Art-Case',
+    ]
+      .filter(Boolean)
+      .join('\n'),
+    html: `
+      <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #111827;">
+        <h2 style="margin-bottom: 12px;">Your order has been placed</h2>
+        <p>Hi ${escapeHtml(customerName)},</p>
+        <p>Thank you for shopping with Art-Case. Your order is confirmed and we have shared all the important details below.</p>
+        <div style="padding: 16px; border: 1px solid #e5e7eb; border-radius: 12px; background: #f9fafb;">
+          <p><strong>Order ID:</strong> ${escapeHtml(orderId)}</p>
+          <p><strong>Invoice number:</strong> ${escapeHtml(invoiceNumber)}</p>
+          <p><strong>Order date:</strong> ${escapeHtml(new Date(orderDate).toLocaleString('en-IN'))}</p>
+          <p><strong>Payment method:</strong> ${escapeHtml(paymentMethod)}</p>
+          <p><strong>Payment status:</strong> ${escapeHtml(paymentStatus)}</p>
+          ${razorpayOrderId ? `<p><strong>Razorpay order ID:</strong> ${escapeHtml(razorpayOrderId)}</p>` : ''}
+          ${razorpayPaymentId ? `<p><strong>Razorpay payment ID:</strong> ${escapeHtml(razorpayPaymentId)}</p>` : ''}
+          ${phone ? `<p><strong>Phone:</strong> ${escapeHtml(phone)}</p>` : ''}
+          <p><strong>Shipping address:</strong> ${escapeHtml([address, city, zip].filter(Boolean).join(', ') || 'Not provided')}</p>
+        </div>
+        <div style="margin-top: 16px; padding: 16px; border: 1px solid #e5e7eb; border-radius: 12px; background: #ffffff;">
+          <h3 style="margin-top: 0;">Order summary</h3>
+          <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+              <tr>
+                <th style="text-align: left; padding: 8px 0; border-bottom: 1px solid #e5e7eb;">Item</th>
+                <th style="text-align: left; padding: 8px 0; border-bottom: 1px solid #e5e7eb;">Qty</th>
+                <th style="text-align: right; padding: 8px 0; border-bottom: 1px solid #e5e7eb;">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${items
+                .map(
+                  (item) => `
+                    <tr>
+                      <td style="padding: 10px 0; border-bottom: 1px solid #f3f4f6;">
+                        <div><strong>${escapeHtml(item.title)}</strong></div>
+                        <div style="color: #6b7280; font-size: 13px;">${escapeHtml(item.category)}</div>
+                      </td>
+                      <td style="padding: 10px 0; border-bottom: 1px solid #f3f4f6;">${item.quantity}</td>
+                      <td style="padding: 10px 0; border-bottom: 1px solid #f3f4f6; text-align: right;">${formatCurrency(item.price * item.quantity, currency)}</td>
+                    </tr>
+                  `
+                )
+                .join('')}
+            </tbody>
+          </table>
+          <div style="margin-top: 16px;">
+            <p><strong>Subtotal:</strong> ${formatCurrency(pricing.subtotal, currency)}</p>
+            <p><strong>Discount:</strong> ${formatCurrency(pricing.discount, currency)}</p>
+            <p><strong>Shipping:</strong> ${formatCurrency(pricing.shipping, currency)}</p>
+            <p style="font-size: 18px;"><strong>Total:</strong> ${formatCurrency(pricing.total, currency)}</p>
+          </div>
+        </div>
+        <p style="margin-top: 16px;">You can log in to your Art-Case account anytime to view your full order details and invoice.</p>
+        <p>Art-Case</p>
+      </div>
+    `,
+  });
 };

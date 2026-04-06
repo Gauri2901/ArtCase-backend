@@ -1,5 +1,39 @@
 import Order from '../models/Order.js';
 
+const normalizeOrder = (orderDocument) => {
+  const order = orderDocument.toObject ? orderDocument.toObject() : orderDocument;
+  const artworkSubtotal =
+    order.artworks?.reduce((sum, artwork) => sum + Number(artwork.price || 0) * Number(artwork.quantity || 1), 0)
+    ?? 0;
+  const paymentAmount = Number(order.payment?.amount || 0);
+  const storedSubtotal = Number(order.pricing?.subtotal ?? 0);
+  const storedDiscount = Number(order.pricing?.discount ?? 0);
+  const storedShipping = Number(order.pricing?.shipping ?? 0);
+  const storedTotal = Number(order.pricing?.total ?? 0);
+
+  const subtotal = storedSubtotal > 0 ? storedSubtotal : artworkSubtotal > 0 ? artworkSubtotal : paymentAmount;
+  const total = storedTotal > 0 ? storedTotal : paymentAmount > 0 ? paymentAmount : subtotal + storedShipping - storedDiscount;
+
+  return {
+    ...order,
+    user: {
+      ...order.user,
+      phone: order.user?.phone || '',
+    },
+    pricing: {
+      subtotal,
+      discount: storedDiscount,
+      shipping: storedShipping,
+      total,
+      currency: order.pricing?.currency || order.payment?.currency || 'INR',
+    },
+    invoice: {
+      invoiceNumber: order.invoice?.invoiceNumber || `INV-${order.orderId}`,
+      issuedAt: order.invoice?.issuedAt || order.placedAt,
+    },
+  };
+};
+
 const buildOrderFilters = (query) => {
   const filters = {};
 
@@ -49,7 +83,7 @@ export const getOrders = async (req, res) => {
 
     const orders = await Order.find(filters).sort({ placedAt: -1 });
 
-    res.status(200).json(orders);
+    res.status(200).json(orders.map(normalizeOrder));
   } catch (error) {
     console.error('getOrders error:', error);
     res.status(500).json({ message: error.message });
@@ -70,7 +104,7 @@ export const getMyOrders = async (req, res) => {
       'user.account': req.user._id,
     }).sort({ placedAt: -1 });
 
-    res.status(200).json(orders);
+    res.status(200).json(orders.map(normalizeOrder));
   } catch (error) {
     console.error('getMyOrders error:', error);
     res.status(500).json({ message: error.message });
@@ -90,7 +124,7 @@ export const getUnreadOrders = async (_req, res) => {
 
     res.status(200).json({
       unreadCount,
-      orders: unreadOrders,
+      orders: unreadOrders.map(normalizeOrder),
     });
   } catch (error) {
     console.error('getUnreadOrders error:', error);

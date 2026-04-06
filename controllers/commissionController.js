@@ -75,6 +75,7 @@ const ensureCommissionOrder = async (commission) => {
         account: commission.customer.account ?? null,
         name: commission.customer.name,
         email: commission.customer.email,
+        phone: existingOrder.user?.phone || '',
         address: '',
         city: '',
         zip: '',
@@ -82,6 +83,17 @@ const ensureCommissionOrder = async (commission) => {
       existingOrder.payment.amount = commission.quotedPrice ?? commission.budget;
       existingOrder.payment.currency = commission.currency || 'INR';
       existingOrder.payment.method = 'Custom Commission';
+      existingOrder.pricing = {
+        subtotal: commission.quotedPrice ?? commission.budget,
+        discount: 0,
+        shipping: 0,
+        total: commission.quotedPrice ?? commission.budget,
+        currency: commission.currency || 'INR',
+      };
+      existingOrder.invoice = {
+        invoiceNumber: existingOrder.invoice?.invoiceNumber || `INV-${Date.now().toString(36).toUpperCase()}`,
+        issuedAt: existingOrder.invoice?.issuedAt || new Date(),
+      };
       existingOrder.commissionDetails = {
         commission: commission._id,
         artworkType: commission.artworkType,
@@ -101,6 +113,7 @@ const ensureCommissionOrder = async (commission) => {
       account: commission.customer.account ?? null,
       name: commission.customer.name,
       email: commission.customer.email,
+      phone: '',
       address: '',
       city: '',
       zip: '',
@@ -113,6 +126,17 @@ const ensureCommissionOrder = async (commission) => {
       status: 'created',
       razorpayOrderId: '',
       razorpayPaymentId: '',
+    },
+    pricing: {
+      subtotal: commission.quotedPrice ?? commission.budget,
+      discount: 0,
+      shipping: 0,
+      total: commission.quotedPrice ?? commission.budget,
+      currency: commission.currency || 'INR',
+    },
+    invoice: {
+      invoiceNumber: `INV-${Date.now().toString(36).toUpperCase()}`,
+      issuedAt: new Date(),
     },
     artworks: [],
     commissionDetails: {

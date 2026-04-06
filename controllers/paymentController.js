@@ -4,6 +4,7 @@ import crypto from 'crypto';
 import dotenv from 'dotenv';
 import Order from '../models/Order.js';
 import User from '../models/User.js';
+import { sendOrderPlacedEmail } from '../utils/email.js';
 
 dotenv.config();
 
@@ -43,6 +44,7 @@ export const verifyPayment = async (req, res) => {
             amount,
             currency,
             method,
+            pricing,
         } = req.body;
 
         const sign = razorpay_order_id + "|" + razorpay_payment_id;
@@ -60,12 +62,24 @@ export const verifyPayment = async (req, res) => {
                 return res.status(400).json({ message: 'Customer and artwork details are required' });
             }
 
+            const subtotal = artworks.reduce((sum, artwork) => sum + Number(artwork.price || 0) * Number(artwork.quantity || 1), 0);
+            const normalizedPricing = {
+                subtotal,
+                discount: Number(pricing?.discount || 0),
+                shipping: Number(pricing?.shipping || 0),
+                total: Number(amount || subtotal),
+                currency: currency || 'INR',
+            };
+            const placedAt = new Date();
+            const invoiceNumber = `INV-${Date.now().toString(36).toUpperCase()}`;
+
             const order = await Order.create({
                 orderId: `ART-${Date.now().toString(36).toUpperCase()}`,
                 user: {
                     account: req.user._id,
                     name: customer.name,
                     email: customer.email,
+                    phone: customer.phone || req.user.phone || '',
                     address: customer.address,
                     city: customer.city,
                     zip: customer.zip,
@@ -78,6 +92,11 @@ export const verifyPayment = async (req, res) => {
                     status: 'paid',
                     razorpayOrderId: razorpay_order_id,
                     razorpayPaymentId: razorpay_payment_id,
+                },
+                pricing: normalizedPricing,
+                invoice: {
+                    invoiceNumber,
+                    issuedAt: placedAt,
                 },
                 artworks: artworks.map((artwork) => ({
                     artwork: artwork.artworkId,
@@ -96,12 +115,34 @@ export const verifyPayment = async (req, res) => {
                     adminNotes: '',
                 },
                 unread: true,
-                placedAt: new Date(),
+                placedAt,
             });
 
             await User.findByIdAndUpdate(req.user._id, {
                 $push: { orders: order._id },
             });
+
+            try {
+                await sendOrderPlacedEmail({
+                    to: customer.email,
+                    customerName: customer.name,
+                    orderId: order.orderId,
+                    orderDate: order.placedAt,
+                    invoiceNumber: order.invoice.invoiceNumber,
+                    paymentMethod: order.payment.method,
+                    paymentStatus: order.payment.status,
+                    razorpayOrderId: order.payment.razorpayOrderId,
+                    razorpayPaymentId: order.payment.razorpayPaymentId,
+                    phone: order.user.phone,
+                    address: order.user.address,
+                    city: order.user.city,
+                    zip: order.user.zip,
+                    items: order.artworks,
+                    pricing: order.pricing,
+                });
+            } catch (emailError) {
+                console.error('Failed to send order placed email:', emailError);
+            }
 
             return res.status(200).json({
                 message: "Payment verified successfully",
