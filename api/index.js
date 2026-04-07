@@ -15,6 +15,7 @@ import logRoutes from '../routes/logRoutes.js';
 import adminRoutes from '../routes/adminRoutes.js';
 import commissionRoutes from '../routes/commissionRoutes.js';
 import notificationRoutes from '../routes/notificationRoutes.js';
+import connectDB from '../utils/db.js';
 
 dotenv.config();
 
@@ -78,10 +79,25 @@ app.options('/{*path}', cors(corsOptions));
 app.use(cors(corsOptions));
 app.use(express.json());
 
-// Database
-mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log('MongoDB Connected'))
-  .catch(err => console.error(err));
+// Database Connection Setup
+// Middleware to ensure DB is connected
+const connectDBMiddleware = async (req, res, next) => {
+  try {
+    if (mongoose.connection.readyState !== 1) {
+      await connectDB();
+    }
+    next();
+  } catch (err) {
+    console.error('Database connection failed:', err.message);
+    res.status(503).json({
+      message: 'Database is unavailable. Please check MONGO_URI and IP whitelist.',
+      error: err.message
+    });
+  }
+};
+
+// Apply DB connection middleware to all API routes
+app.use('/api', connectDBMiddleware);
 
 // Mounting Routes
 app.use('/api/products', productRoutes);
