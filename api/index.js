@@ -32,7 +32,7 @@ const corsOptions = {
       'http://127.0.0.1:5173',
       'http://127.0.0.1:3000',
       // Production - Frontend
-      'https://art-case-frontend-1gjb.vercel.app',
+      'https://art-case-frontend.vercel.app',
       // Productions - Any other frontend subdomain
     ];
 
