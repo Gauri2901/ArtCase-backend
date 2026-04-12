@@ -116,5 +116,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 app.use('/uploads', express.static(path.join(__dirname, '/uploads')));
 
+// Call connectDB immediately to provide logs on startup
+connectDB().catch(err => console.error('Initial DB connection failed:', err.message));
+
 // Start Server
 export default app;
