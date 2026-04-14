@@ -44,8 +44,8 @@ const seedDB = async () => {
     await mongoose.connect(process.env.MONGO_URI);
     console.log("Connected to DB for seeding...");
 
-    // Clear existing products
-    await Product.deleteMany({});
+    // // Clear existing products
+    // await Product.deleteMany({});
     
     // Insert new ones
     await Product.insertMany(sampleProducts);
