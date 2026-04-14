@@ -15,6 +15,7 @@ import logRoutes from '../routes/logRoutes.js';
 import adminRoutes from '../routes/adminRoutes.js';
 import commissionRoutes from '../routes/commissionRoutes.js';
 import notificationRoutes from '../routes/notificationRoutes.js';
+import userRoutes from '../routes/userRoutes.js';
 import connectDB from '../utils/db.js';
 
 dotenv.config();
@@ -72,11 +73,8 @@ const corsOptions = {
   maxAge: 86400
 };
 
-// ✅ CHANGE: Added this line to handle preflight OPTIONS requests
-app.options('/{*path}', cors(corsOptions));
-
 // Middleware
-app.use(cors(corsOptions));
+app.use(cors(corsOptions)); // This handles preflight (OPTIONS) automatically
 app.use(express.json());
 
 // Database Connection Setup
@@ -89,6 +87,11 @@ const connectDBMiddleware = async (req, res, next) => {
     next();
   } catch (err) {
     console.error('Database connection failed:', err.message);
+    
+    // ✅ FIX: Ensure CORS headers are present even on error responses
+    res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    
     res.status(503).json({
       message: 'Database is unavailable. Please check MONGO_URI and IP whitelist.',
       error: err.message
@@ -110,6 +113,7 @@ app.use('/api/logs', logRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/commissions', commissionRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/users', userRoutes);
 
 // Static Folder for Images
 const __filename = fileURLToPath(import.meta.url);

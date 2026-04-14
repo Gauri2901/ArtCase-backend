@@ -114,6 +114,10 @@ export const getProducts = async (req, res) => {
     }
 
     const products = await Product.find(query).sort({ createdAt: -1 });
+    
+    // Set cache headers - 1 hour public cache, 10 minutes stale-while-revalidate
+    res.setHeader('Cache-Control', 'public, max-age=3600, stale-while-revalidate=600');
+    
     res.json(products);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -127,6 +131,7 @@ export const getProductById = async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
     if (product) {
+      res.setHeader('Cache-Control', 'public, max-age=3600, stale-while-revalidate=600');
       res.json(product);
     } else {
       res.status(404).json({ message: 'Product not found' });
