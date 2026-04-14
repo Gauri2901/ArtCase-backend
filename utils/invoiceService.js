@@ -66,6 +66,7 @@ export const ensureInvoiceForOrder = async (orderDocument) => {
         address: order.user.address || '',
         city: order.user.city || '',
         zip: order.user.zip || '',
+        state: order.user.state || '',
       },
       payment: {
         method: order.payment.method,
@@ -100,6 +101,7 @@ export const ensureInvoiceForOrder = async (orderDocument) => {
       address: order.user.address || '',
       city: order.user.city || '',
       zip: order.user.zip || '',
+      state: order.user.state || '',
     };
     invoice.payment = {
       method: order.payment.method,

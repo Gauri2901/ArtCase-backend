@@ -84,6 +84,7 @@ export const verifyPayment = async (req, res) => {
                     address: customer.address,
                     city: customer.city,
                     zip: customer.zip,
+                    state: customer.state || '',
                 },
                 orderKind: 'purchase',
                 payment: {
@@ -119,9 +120,31 @@ export const verifyPayment = async (req, res) => {
                 placedAt,
             });
 
-            await User.findByIdAndUpdate(req.user._id, {
-                $push: { orders: order._id },
-            });
+            // Save address to user profile if it doesn't exist
+            const currentUser = await User.findById(req.user._id);
+            if (currentUser) {
+                const addressExists = currentUser.addresses.some(addr => 
+                    addr.addressLine === customer.address && 
+                    addr.city === customer.city && 
+                    addr.zip === customer.zip
+                );
+
+                if (!addressExists) {
+                    currentUser.addresses.push({
+                        name: customer.name,
+                        phone: customer.phone || currentUser.phone || '',
+                        addressLine: customer.address,
+                        city: customer.city,
+                        state: customer.state || '', // Added state if available
+                        zip: customer.zip,
+                        isDefault: currentUser.addresses.length === 0,
+                        addressType: 'Home'
+                    });
+                }
+                
+                currentUser.orders.push(order._id);
+                await currentUser.save();
+            }
 
             const invoiceResult = await ensureInvoiceForOrder(order);
             order.invoice.invoiceNumber = invoiceResult.invoice.invoiceNumber;

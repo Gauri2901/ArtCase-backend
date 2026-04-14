@@ -22,18 +22,23 @@ const userSchema = new mongoose.Schema({
         type: Boolean, 
         default: false 
     }, 
-    address: { 
-        type: String, 
-        default: '' 
-    },
-    city: { 
-        type: String, 
-        default: '' 
-    },
-    zip: { 
-        type: String, 
-        default: '' 
-    },
+    addresses: [{
+        name: String,
+        phone: String,
+        addressLine: String,
+        city: String,
+        state: String,
+        zip: String,
+        isDefault: {
+            type: Boolean,
+            default: false
+        },
+        addressType: {
+            type: String,
+            enum: ['Home', 'Work', 'Other'],
+            default: 'Home'
+        }
+    }],
     wishlist: [{ 
         type: mongoose.Schema.Types.ObjectId, 
         ref: 'Product' 
