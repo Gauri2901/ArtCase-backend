@@ -16,6 +16,7 @@ import adminRoutes from '../routes/adminRoutes.js';
 import commissionRoutes from '../routes/commissionRoutes.js';
 import notificationRoutes from '../routes/notificationRoutes.js';
 import userRoutes from '../routes/userRoutes.js';
+import reviewRoutes from '../routes/reviewRoutes.js';
 import connectDB from '../utils/db.js';
 
 dotenv.config();
@@ -114,6 +115,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/commissions', commissionRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/reviews', reviewRoutes);
 
 // Static Folder for Images
 const __filename = fileURLToPath(import.meta.url);
