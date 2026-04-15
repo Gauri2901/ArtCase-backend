@@ -42,6 +42,16 @@ export const productSchema = new mongoose.Schema({
   featured: { 
     type: Boolean, 
     default: false 
+  },
+  rating: {
+    type: Number,
+    required: true,
+    default: 0
+  },
+  numReviews: {
+    type: Number,
+    required: true,
+    default: 0
   }
 }, { timestamps: true });
 

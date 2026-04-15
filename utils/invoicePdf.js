@@ -6,7 +6,7 @@ const formatCurrency = (amount, currency = 'INR') =>
     currency,
   }).format(amount);
 
-const formatAddress = (user) => [user.address, user.city, user.zip].filter(Boolean).join(', ') || 'Not provided';
+const formatAddress = (user) => [user.address, user.city, user.state, user.zip].filter(Boolean).join(', ') || 'Not provided';
 
 export const buildInvoicePdfBuffer = async ({ invoice, order }) =>
   new Promise((resolve, reject) => {

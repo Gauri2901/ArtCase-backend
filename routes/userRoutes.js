@@ -1,5 +1,13 @@
 import express from 'express';
-import { getWishlist, toggleWishlistItem } from '../controllers/userController.js';
+import { 
+  getWishlist, 
+  toggleWishlistItem, 
+  getAddresses, 
+  addAddress, 
+  updateAddress, 
+  deleteAddress, 
+  setDefaultAddress 
+} from '../controllers/userController.js';
 import { protect } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
@@ -11,5 +19,15 @@ router.route('/wishlist')
 
 router.route('/wishlist/:id')
   .post(toggleWishlistItem);
+
+router.route('/addresses')
+  .get(getAddresses)
+  .post(addAddress);
+
+router.route('/addresses/:id')
+  .put(updateAddress)
+  .delete(deleteAddress);
+
+router.patch('/addresses/:id/default', setDefaultAddress);
 
 export default router;

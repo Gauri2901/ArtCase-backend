@@ -85,6 +85,11 @@ const invoiceSchema = new mongoose.Schema(
         trim: true,
         default: '',
       },
+      state: {
+        type: String,
+        trim: true,
+        default: '',
+      },
     },
     payment: {
       method: {
