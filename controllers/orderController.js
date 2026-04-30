@@ -1,4 +1,5 @@
 import Order from '../models/Order.js';
+import Commission from '../models/Commission.js';
 import Invoice from '../models/Invoice.js';
 import { ensureInvoiceForOrder } from '../utils/invoiceService.js';
 
@@ -137,15 +138,21 @@ export const getMyOrders = async (req, res) => {
 // ✅ NOTIFICATIONS (UNREAD ORDERS)
 export const getUnreadOrders = async (_req, res) => {
   try {
-    const unreadOrders = await Order.find({ unread: true })
-      .sort({ placedAt: -1 })
-      .limit(5);
-
-    const unreadCount = await Order.countDocuments({ unread: true });
+    const [unreadOrders, unreadOrderCount, unreadCommissions, unreadCommissionCount] = await Promise.all([
+      Order.find({ unread: true })
+        .sort({ placedAt: -1 })
+        .limit(5),
+      Order.countDocuments({ unread: true }),
+      Commission.find({ unread: true })
+        .sort({ submittedAt: -1 })
+        .limit(5),
+      Commission.countDocuments({ unread: true }),
+    ]);
 
     res.status(200).json({
-      unreadCount,
+      unreadCount: unreadOrderCount + unreadCommissionCount,
       orders: unreadOrders.map(normalizeOrder),
+      commissions: unreadCommissions,
     });
   } catch (error) {
     console.error('getUnreadOrders error:', error);
@@ -158,7 +165,10 @@ export const getUnreadOrders = async (_req, res) => {
 // ✅ MARK AS READ
 export const markOrdersAsRead = async (_req, res) => {
   try {
-    await Order.updateMany({ unread: true }, { unread: false });
+    await Promise.all([
+      Order.updateMany({ unread: true }, { unread: false }),
+      Commission.updateMany({ unread: true }, { unread: false }),
+    ]);
 
     res.status(200).json({ message: 'Notifications marked as read' });
   } catch (error) {
