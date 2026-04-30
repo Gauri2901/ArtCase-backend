@@ -2,17 +2,15 @@ import UserNotification from '../models/UserNotification.js';
 
 export const getMyNotifications = async (req, res) => {
   try {
-    const notifications = await UserNotification.find({ user: req.user._id })
+    const notifications = await UserNotification.find({
+      user: req.user._id,
+      read: false,
+    })
       .sort({ createdAt: -1 })
       .limit(25);
 
-    const unreadCount = await UserNotification.countDocuments({
-      user: req.user._id,
-      read: false,
-    });
-
     res.json({
-      unreadCount,
+      unreadCount: notifications.length,
       notifications,
     });
   } catch (error) {
