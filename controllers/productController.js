@@ -4,18 +4,26 @@ import UploadLog from '../models/UploadLog.js';
 const ALLOWED_CATEGORIES = ['Oil', 'Acrylic', 'Watercolor', 'Mixed Media'];
 
 const normalizeTags = (tags) => {
-  if (Array.isArray(tags)) {
-    return tags.map((tag) => String(tag).trim()).filter(Boolean);
-  }
+  const seen = new Set();
 
-  if (typeof tags === 'string') {
-    return tags
-      .split(',')
-      .map((tag) => tag.trim())
-      .filter(Boolean);
-  }
+  const cleanedTags = (Array.isArray(tags)
+    ? tags
+    : typeof tags === 'string'
+      ? tags.split(',')
+      : []
+  )
+    .map((tag) => String(tag).trim().replace(/\s+/g, ' '))
+    .filter(Boolean)
+    .filter((tag) => {
+      const normalizedTag = tag.toLowerCase();
+      if (seen.has(normalizedTag)) {
+        return false;
+      }
+      seen.add(normalizedTag);
+      return true;
+    });
 
-  return [];
+  return cleanedTags;
 };
 
 const buildArtworkPayload = (body) => {
