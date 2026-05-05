@@ -24,47 +24,56 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+const normalizeOrigin = (value) => value?.trim().replace(/\/$/, '');
+
+const localOrigins = [
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'http://127.0.0.1:5173',
+  'http://127.0.0.1:3000',
+];
+
+const configuredOrigins = [
+  process.env.FRONTEND_URL,
+  process.env.FRONTEND_PREVIEW_URL,
+  'https://art-case-frontend.vercel.app',
+].map(normalizeOrigin).filter(Boolean);
+
+const allowedOrigins = new Set([...localOrigins, ...configuredOrigins]);
+
+const vercelPreviewPattern = /^https:\/\/art-case-frontend(?:-[a-z0-9-]+)?\.vercel\.app$/i;
+
+const isAllowedOrigin = (origin) => {
+  const normalizedOrigin = normalizeOrigin(origin);
+
+  if (!normalizedOrigin) {
+    return true;
+  }
+
+  if (allowedOrigins.has(normalizedOrigin)) {
+    return true;
+  }
+
+  if (normalizedOrigin.includes('localhost') || normalizedOrigin.includes('127.0.0.1')) {
+    return true;
+  }
+
+  if (vercelPreviewPattern.test(normalizedOrigin)) {
+    return true;
+  }
+
+  return process.env.NODE_ENV === 'development';
+};
+
 // CORS Configuration
 const corsOptions = {
   origin: function(origin, callback) {
-    const allowedOrigins = [
-      // Development
-      'http://localhost:5173',
-      'http://localhost:3000',
-      'http://127.0.0.1:5173',
-      'http://127.0.0.1:3000',
-      // Production - Frontend
-      'https://art-case-frontend.vercel.app',
-      // Productions - Any other frontend subdomain
-    ];
-
-    // Allow requests without origin (mobile apps, same-origin requests)
-    if (!origin) {
-      return callback(null, true);
-    }
-
-    // Allow Vercel frontend urls (pattern matching for any art-case-frontend.vercel.app subdomain)
-    if (/https:\/\/art-case-frontend.*\.vercel\.app$/.test(origin)) {
-      return callback(null, true);
-    }
-
-    // Allow localhost/127.0.0.1 for development
-    if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
-      return callback(null, true);
-    }
-
-    // For production, check allowed list
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
-
-    // Allow any origin in development for easier testing
-    if (process.env.NODE_ENV === 'development') {
+    if (isAllowedOrigin(origin)) {
       return callback(null, true);
     }
 
     console.warn(`CORS request from origin: ${origin}`);
-    callback(null, true); // Allow anyway, but log it for monitoring
+    callback(new Error(`Origin ${origin} is not allowed by CORS`));
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS', 'HEAD'],
@@ -74,8 +83,26 @@ const corsOptions = {
   maxAge: 86400
 };
 
+app.use((req, res, next) => {
+  if (req.method !== 'OPTIONS') {
+    return next();
+  }
+
+  const origin = req.headers.origin;
+
+  if (isAllowedOrigin(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,PATCH,OPTIONS,HEAD');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  }
+
+  return res.status(200).end();
+});
+
 // Middleware
 app.use(cors(corsOptions)); // This handles preflight (OPTIONS) automatically
+app.options(/.*/, cors(corsOptions));
 app.use(express.json());
 
 // Database Connection Setup
@@ -88,10 +115,12 @@ const connectDBMiddleware = async (req, res, next) => {
     next();
   } catch (err) {
     console.error('Database connection failed:', err.message);
-    
-    // ✅ FIX: Ensure CORS headers are present even on error responses
-    res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
-    res.header('Access-Control-Allow-Credentials', 'true');
+
+    const origin = req.headers.origin;
+    if (isAllowedOrigin(origin)) {
+      res.header('Access-Control-Allow-Origin', origin);
+      res.header('Access-Control-Allow-Credentials', 'true');
+    }
     
     res.status(503).json({
       message: 'Database is unavailable. Please check MONGO_URI and IP whitelist.',
