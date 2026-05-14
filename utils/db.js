@@ -21,9 +21,10 @@ const connectDB = async () => {
         throw new Error('MONGO_URI is not defined in environment variables');
     }
 
-    // 3. Start a new connection attempt and cache the promise
     const opts = {
         bufferCommands: false, // Recommended for serverless
+        serverSelectionTimeoutMS: 5000, // Timeout after 5s instead of default 30s
+        connectTimeoutMS: 5000,
     };
 
     try {

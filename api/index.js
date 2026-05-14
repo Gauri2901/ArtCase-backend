@@ -154,5 +154,21 @@ app.use('/uploads', express.static(path.join(__dirname, '/uploads')));
 // Call connectDB immediately to provide logs on startup
 connectDB().catch(err => console.error('Initial DB connection failed:', err.message));
 
+// Generic Error Handler to ensure CORS headers are sent on 500 errors
+app.use((err, req, res, next) => {
+  console.error('Unhandled Server Error:', err);
+  
+  const origin = req.headers.origin;
+  if (isAllowedOrigin(origin)) {
+    res.header('Access-Control-Allow-Origin', origin);
+    res.header('Access-Control-Allow-Credentials', 'true');
+  }
+  
+  res.status(500).json({
+    message: 'Internal Server Error',
+    error: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong'
+  });
+});
+
 // Start Server
 export default app;
