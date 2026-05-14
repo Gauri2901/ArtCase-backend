@@ -7,7 +7,7 @@ This is the backend service for ArtCase, a digital art marketplace. It provides 
 * **Authentication**: Secure login and registration using JWT and bcrypt.
 * **Product Management**: API endpoints for adding, reading, updating, and deleting artworks.
 * **Image Uploads**: Direct integration with Cloudinary to safely store artwork images.
-* **Payment Gateways**: Supports payments through both Stripe and Razorpay.
+* **Payment Gateways**: Supports payments through Razorpay.
 * **Automated Invoices**: Automatically creates PDF invoices for successful orders.
 * **Email Notifications**: Sends order confirmations and password reset links.
 * **AI Integration**: Uses Google Generative AI / OpenAI for smart artwork tagging.
@@ -20,7 +20,7 @@ This is the backend service for ArtCase, a digital art marketplace. It provides 
 * **Database**: MongoDB with Mongoose
 * **Authentication**: JSON Web Tokens (JWT)
 * **File Storage**: Cloudinary (via Multer)
-* **Payments**: Stripe & Razorpay SDKs
+* **Payments**: Razorpay SDK
 * **Invoices**: PDFKit
 
 ## 📦 Local Setup
@@ -44,7 +44,6 @@ This is the backend service for ArtCase, a digital art marketplace. It provides 
    CLOUDINARY_API_SECRET=
    
    # Payments
-   STRIPE_SECRET_KEY=
    RAZORPAY_KEY_ID=
    RAZORPAY_KEY_SECRET=
    ```
